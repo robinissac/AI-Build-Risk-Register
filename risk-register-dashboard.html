@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elite PM · Risk Register &amp; Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+  body{font-family:'IBM Plex Sans',system-ui,sans-serif;background:#0e1a26;color:#e8eef4}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  .card{background:#152434;border:1px solid #24384e;border-radius:12px}
+  .cell{transition:transform .12s ease, box-shadow .12s ease;cursor:default}
+  .cell:hover{transform:scale(1.06);box-shadow:0 4px 14px rgba(0,0,0,.45);z-index:5}
+  input,select{background:#0e1a26;border:1px solid #2c435c;border-radius:8px;padding:.5rem .7rem;font-size:.85rem;color:#e8eef4;width:100%}
+  input:focus,select:focus{outline:2px solid #38bdf8;outline-offset:1px;border-color:#38bdf8}
+  label{font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:#8fa8bf;font-weight:600;display:block;margin-bottom:.3rem}
+  .badge{font-size:.68rem;font-weight:600;padding:.15rem .55rem;border-radius:999px;display:inline-block}
+  table{border-collapse:separate;border-spacing:0}
+  th{font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;color:#8fa8bf;text-align:left;padding:.6rem .75rem;border-bottom:1px solid #24384e;white-space:nowrap}
+  td{padding:.6rem .75rem;font-size:.82rem;border-bottom:1px solid #1c2f42;vertical-align:middle}
+  tr:hover td{background:#1a2c40}
+  button:focus-visible,a:focus-visible{outline:2px solid #38bdf8;outline-offset:2px}
+  @media (prefers-reduced-motion: reduce){.cell{transition:none}}
+</style>
+</head>
+<body class="min-h-screen">
+
+<header class="border-b border-[#24384e] bg-[#0b1520]">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <div class="mono text-[11px] tracking-[.2em] text-sky-400 uppercase">Elite PM Community</div>
+      <h1 class="text-xl sm:text-2xl font-bold">Project Risk Register &amp; Live Dashboard</h1>
+      <p class="text-xs text-[#8fa8bf] mt-1">PMI-aligned · Agile-aware · P × I scoring on a 5×5 matrix</p>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="fileImport.click()" class="border border-sky-500 text-sky-300 hover:bg-sky-500/10 font-semibold text-sm px-4 py-2.5 rounded-lg flex items-center gap-2">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 21V9m0 0l-4 4m4-4l4 4M4 3h16"/></svg>
+        Import CSV
+      </button>
+      <input type="file" id="fileImport" accept=".csv,text/csv" class="hidden" onchange="importCSV(event)">
+      <button onclick="exportCSV()" class="bg-sky-500 hover:bg-sky-400 text-[#06121d] font-semibold text-sm px-4 py-2.5 rounded-lg flex items-center gap-2">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>
+        Export to Excel / CSV
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+  <!-- METRIC CARDS -->
+  <section class="grid grid-cols-1 sm:grid-cols-3 gap-4" aria-label="Summary metrics">
+    <div class="card p-5">
+      <div class="text-xs uppercase tracking-wider text-[#8fa8bf] font-semibold">Total Open Risks</div>
+      <div id="mOpen" class="mono text-4xl font-semibold mt-2 text-sky-300">0</div>
+      <div class="text-xs text-[#8fa8bf] mt-1">Status = Open or In-Progress</div>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs uppercase tracking-wider text-[#8fa8bf] font-semibold">Critical Risks (Score ≥ 15)</div>
+      <div id="mCrit" class="mono text-4xl font-semibold mt-2 text-red-400">0</div>
+      <div class="text-xs text-[#8fa8bf] mt-1">Immediate response required</div>
+    </div>
+    <div class="card p-5">
+      <div class="text-xs uppercase tracking-wider text-[#8fa8bf] font-semibold">Primary Response Strategy</div>
+      <div id="mStrat" class="text-2xl font-bold mt-2 text-emerald-300">—</div>
+      <div id="mStratSub" class="text-xs text-[#8fa8bf] mt-1">Most used across active risks</div>
+    </div>
+  </section>
+
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- FORM -->
+    <section class="card p-5 lg:col-span-2" aria-label="Log a risk">
+      <h2 class="font-bold text-sm uppercase tracking-wider text-sky-300 mb-4">Log a New Risk</h2>
+      <div class="space-y-3">
+        <div>
+          <label for="fDesc">Risk Description</label>
+          <input id="fDesc" placeholder="e.g. Vendor SLA breach on core network migration">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="fCat">Category</label>
+            <select id="fCat"><option>Technical</option><option>Operational</option><option>External</option><option>Management</option></select>
+          </div>
+          <div>
+            <label for="fOwner">Owner</label>
+            <input id="fOwner" placeholder="Name / role">
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label for="fProb">Probability (1–5)</label>
+            <select id="fProb" onchange="previewScore()"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+          </div>
+          <div>
+            <label for="fImp">Impact (1–5)</label>
+            <select id="fImp" onchange="previewScore()"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select>
+          </div>
+          <div>
+            <label>Risk Score (P×I)</label>
+            <div id="fScore" class="mono text-center font-semibold rounded-lg py-2 text-sm bg-amber-500/20 text-amber-300 border border-amber-500/30">9</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="fResp">Response Strategy (PMI)</label>
+            <select id="fResp"><option>Avoid</option><option selected>Mitigate</option><option>Transfer</option><option>Accept</option><option>Escalate</option></select>
+          </div>
+          <div>
+            <label for="fVel">Agile Velocity Impact</label>
+            <select id="fVel"><option>Low</option><option selected>Medium</option><option>High</option></select>
+          </div>
+        </div>
+        <div>
+          <label for="fStatus">Status</label>
+          <select id="fStatus"><option>Open</option><option>In-Progress</option><option>Closed</option></select>
+        </div>
+        <button onclick="addRisk()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-[#06121d] font-semibold text-sm py-2.5 rounded-lg mt-1">Add Risk to Register</button>
+        <p id="formMsg" class="text-xs text-red-400 hidden">Enter a risk description before adding.</p>
+      </div>
+    </section>
+
+    <!-- HEATMAP -->
+    <section class="card p-5 lg:col-span-3" aria-label="Risk heatmap">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold text-sm uppercase tracking-wider text-sky-300">5×5 Risk Heatmap (PMI)</h2>
+        <div class="flex gap-3 text-[10px] uppercase tracking-wider text-[#8fa8bf] font-semibold">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>Low</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-yellow-400"></span>Mod</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-orange-500"></span>High</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-red-600"></span>Critical</span>
+        </div>
+      </div>
+      <div class="flex">
+        <div class="flex flex-col justify-center pr-2">
+          <span class="text-[10px] uppercase tracking-widest text-[#8fa8bf] font-semibold" style="writing-mode:vertical-rl;transform:rotate(180deg)">Probability →</span>
+        </div>
+        <div class="flex-1">
+          <div id="heatmap" class="grid grid-cols-5 gap-1.5"></div>
+          <div class="text-center text-[10px] uppercase tracking-widest text-[#8fa8bf] font-semibold mt-2">Impact →</div>
+        </div>
+      </div>
+      <p class="text-xs text-[#8fa8bf] mt-3">Numbers show count of active (non-closed) risks in each cell. Hover a cell to see risk IDs.</p>
+    </section>
+  </div>
+
+  <!-- REGISTER TABLE -->
+  <section class="card p-5 overflow-hidden" aria-label="Risk register table">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+      <h2 class="font-bold text-sm uppercase tracking-wider text-sky-300">Risk Register</h2>
+      <span id="countLbl" class="text-xs text-[#8fa8bf]"></span>
+    </div>
+    <div class="overflow-x-auto -mx-5 px-5">
+      <table class="w-full min-w-[900px]">
+        <thead><tr>
+          <th>ID</th><th>Risk Description</th><th>Category</th><th class="text-center">P</th><th class="text-center">I</th>
+          <th class="text-center">Score</th><th>Response</th><th>Velocity Impact</th><th>Status</th><th>Owner</th><th></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer class="max-w-7xl mx-auto px-6 pb-8 text-[11px] text-[#5f7890]">
+  Scoring: 1–5 Low · 6–9 Moderate · 10–14 High · 15–25 Critical. Aligned to PMBOK® threat response strategies.
+</footer>
+
+<!-- Export fallback modal -->
+<div id="csvModal" class="hidden fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+  <div class="card p-5 w-full max-w-2xl">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-bold text-sm uppercase tracking-wider text-sky-300">Export — Risk Register CSV</h3>
+      <button onclick="closeModal()" class="text-[#8fa8bf] hover:text-white text-lg font-bold px-2" aria-label="Close">✕</button>
+    </div>
+    <p class="text-xs text-[#8fa8bf] mb-2">If the file didn't download automatically (some preview windows block downloads), copy the CSV below and paste it directly into Excel or Google Sheets — it will split into columns automatically.</p>
+    <textarea id="csvBox" readonly class="w-full h-48 mono text-[11px] bg-[#0e1a26] border border-[#2c435c] rounded-lg p-3 text-[#e8eef4]"></textarea>
+    <div class="flex gap-2 mt-3">
+      <button id="copyBtn" onclick="copyCSV()" class="bg-sky-500 hover:bg-sky-400 text-[#06121d] font-semibold text-sm px-4 py-2 rounded-lg">Copy CSV to clipboard</button>
+      <button onclick="closeModal()" class="border border-[#2c435c] text-[#8fa8bf] hover:text-white text-sm px-4 py-2 rounded-lg">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let risks = [
+  {id:1, desc:"API Integration Delay — payment gateway vendor slipping delivery by 2 sprints", cat:"Technical", p:4, i:4, resp:"Mitigate", vel:"High", status:"Open", owner:"A. Menon"},
+  {id:2, desc:"Scope Creep on Sprint 3 — unplanned reporting features requested by business", cat:"Management", p:4, i:3, resp:"Escalate", vel:"Medium", status:"In-Progress", owner:"R. Thomas"},
+  {id:3, desc:"Resource Availability constraint — lead network engineer shared across programs", cat:"Operational", p:3, i:5, resp:"Transfer", vel:"High", status:"Open", owner:"S. Khan"}
+];
+let nextId = 4;
+
+const scoreBand = s => s>=15 ? ["Critical","bg-red-600 text-white"] : s>=10 ? ["High","bg-orange-500 text-white"] : s>=6 ? ["Moderate","bg-yellow-400 text-[#06121d]"] : ["Low","bg-emerald-500 text-[#06121d]"];
+const cellColor = s => s>=15 ? "bg-red-600" : s>=10 ? "bg-orange-500" : s>=6 ? "bg-yellow-400" : "bg-emerald-500";
+const statusBadge = st => st==="Open" ? "bg-red-500/20 text-red-300 border border-red-500/30" : st==="In-Progress" ? "bg-sky-500/20 text-sky-300 border border-sky-500/30" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30";
+const velBadge = v => v==="High" ? "bg-fuchsia-500/20 text-fuchsia-300" : v==="Medium" ? "bg-amber-500/20 text-amber-300" : "bg-slate-500/20 text-slate-300";
+const esc = t => t.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function previewScore(){
+  const s = +fProb.value * +fImp.value;
+  const [band] = scoreBand(s);
+  fScore.textContent = s + " · " + band;
+  fScore.className = "mono text-center font-semibold rounded-lg py-2 text-sm border " +
+    (s>=15 ? "bg-red-500/20 text-red-300 border-red-500/30" :
+     s>=10 ? "bg-orange-500/20 text-orange-300 border-orange-500/30" :
+     s>=6  ? "bg-amber-500/20 text-amber-300 border-amber-500/30" :
+             "bg-emerald-500/20 text-emerald-300 border-emerald-500/30");
+}
+
+function addRisk(){
+  const desc = fDesc.value.trim();
+  if(!desc){ formMsg.classList.remove("hidden"); fDesc.focus(); return; }
+  formMsg.classList.add("hidden");
+  risks.push({ id: nextId++, desc, cat: fCat.value, p:+fProb.value, i:+fImp.value,
+    resp: fResp.value, vel: fVel.value, status: fStatus.value, owner: fOwner.value.trim() || "Unassigned" });
+  fDesc.value=""; fOwner.value="";
+  render();
+}
+
+function cycleStatus(id){
+  const r = risks.find(x=>x.id===id);
+  r.status = r.status==="Open" ? "In-Progress" : r.status==="In-Progress" ? "Closed" : "Open";
+  render();
+}
+function delRisk(id){ risks = risks.filter(r=>r.id!==id); render(); }
+
+function render(){
+  // table
+  tbody.innerHTML = risks.map(r=>{
+    const s = r.p*r.i, [band, cls] = scoreBand(s);
+    return `<tr>
+      <td class="mono text-[#8fa8bf]">R-${String(r.id).padStart(3,"0")}</td>
+      <td class="max-w-[320px]">${esc(r.desc)}</td>
+      <td>${r.cat}</td>
+      <td class="mono text-center">${r.p}</td>
+      <td class="mono text-center">${r.i}</td>
+      <td class="text-center"><span class="badge ${cls}">${s} · ${band}</span></td>
+      <td>${r.resp}</td>
+      <td><span class="badge ${velBadge(r.vel)}">${r.vel}</span></td>
+      <td><button onclick="cycleStatus(${r.id})" title="Click to change status" class="badge ${statusBadge(r.status)} cursor-pointer">${r.status}</button></td>
+      <td>${esc(r.owner)}</td>
+      <td><button onclick="delRisk(${r.id})" aria-label="Delete risk" class="text-[#5f7890] hover:text-red-400 text-sm font-bold px-1">✕</button></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="11" class="text-center text-[#8fa8bf] py-8">No risks logged. Add your first risk using the form.</td></tr>`;
+  countLbl.textContent = risks.length + " risk(s) · click a status badge to advance it";
+
+  // metrics
+  const active = risks.filter(r=>r.status!=="Closed");
+  mOpen.textContent = active.length;
+  mCrit.textContent = active.filter(r=>r.p*r.i>=15).length;
+  const counts = {};
+  active.forEach(r=>counts[r.resp]=(counts[r.resp]||0)+1);
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  mStrat.textContent = top ? top[0] : "—";
+  mStratSub.textContent = top ? `${top[1]} of ${active.length} active risks` : "No active risks";
+
+  // heatmap: rows P=5..1 (top to bottom), cols I=1..5
+  let html = "";
+  for(let p=5;p>=1;p--){
+    for(let i=1;i<=5;i++){
+      const inCell = active.filter(r=>r.p===p && r.i===i);
+      const s = p*i;
+      const ids = inCell.map(r=>"R-"+String(r.id).padStart(3,"0")).join(", ");
+      html += `<div class="cell ${cellColor(s)} rounded-md aspect-square flex flex-col items-center justify-center ${inCell.length? "" : "opacity-30"}"
+        title="P${p} × I${i} = ${s}${ids ? " — " + ids : ""}">
+        <span class="mono font-bold text-lg ${s>=10?"text-white":"text-[#06121d]"}">${inCell.length||""}</span>
+        <span class="text-[9px] font-semibold ${s>=10?"text-white/70":"text-[#06121d]/60"}">${p}×${i}</span>
+      </div>`;
+    }
+  }
+  heatmap.innerHTML = html;
+}
+
+function buildCSV(){
+  const head = ["Risk ID","Risk Description","Category","Probability","Impact","Risk Score","Risk Band","Response Strategy","Agile Velocity Impact","Status","Owner"];
+  const rows = risks.map(r=>{
+    const s=r.p*r.i;
+    return ["R-"+String(r.id).padStart(3,"0"), r.desc, r.cat, r.p, r.i, s, scoreBand(s)[0], r.resp, r.vel, r.status, r.owner]
+      .map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",");
+  });
+  return [head.join(","),...rows].join("\r\n");
+}
+
+function exportCSV(){
+  const csv = buildCSV();
+  const fname = "risk-register-" + new Date().toISOString().slice(0,10) + ".csv";
+  try{
+    const blob = new Blob(["\uFEFF"+csv], {type:"text/csv;charset=utf-8;"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+  }catch(e){}
+  // Fallback panel: sandboxed previews often block downloads — always show copy option too
+  csvBox.value = csv;
+  csvModal.classList.remove("hidden");
+}
+
+function copyCSV(){
+  csvBox.select();
+  csvBox.setSelectionRange(0, 999999);
+  try{ navigator.clipboard.writeText(csvBox.value); }catch(e){ document.execCommand("copy"); }
+  copyBtn.textContent = "Copied ✓ — paste into Excel";
+  setTimeout(()=>copyBtn.textContent="Copy CSV to clipboard", 2500);
+}
+function closeModal(){ csvModal.classList.add("hidden"); }
+
+// Minimal RFC-4180 CSV parser (handles quoted fields with commas/newlines)
+function parseCSV(text){
+  const rows=[]; let row=[], field="", inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; }
+      else field+=c;
+    } else {
+      if(c==='"') inQ=true;
+      else if(c===','){ row.push(field); field=""; }
+      else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n')i++; row.push(field); field=""; if(row.some(f=>f!=="")) rows.push(row); row=[]; }
+      else field+=c;
+    }
+  }
+  if(field!==""||row.length){ row.push(field); if(row.some(f=>f!=="")) rows.push(row); }
+  return rows;
+}
+
+function importCSV(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result.replace(/^\uFEFF/,""));
+    if(rows.length < 2){ alert("No data rows found in that CSV."); return; }
+    const hdr = rows[0].map(h=>h.trim().toLowerCase());
+    const col = name => hdr.findIndex(h=>h.includes(name));
+    const cDesc=col("desc"), cCat=col("categ"), cP=col("prob"), cI=col("impact"),
+          cResp=col("response"), cVel=col("velocity"), cSt=col("status"), cOw=col("owner");
+    if(cDesc<0){ alert("Could not find a 'Risk Description' column. Use a file exported from this app or matching headers."); return; }
+    let added=0;
+    rows.slice(1).forEach(r=>{
+      const desc=(r[cDesc]||"").trim(); if(!desc) return;
+      const clamp=(v,d)=>{const n=parseInt(v);return n>=1&&n<=5?n:d;};
+      risks.push({ id: nextId++, desc,
+        cat: ["Technical","Operational","External","Management"].find(x=>x.toLowerCase()===(r[cCat]||"").trim().toLowerCase())||"Technical",
+        p: clamp(r[cP],3), i: clamp(r[cI],3),
+        resp: ["Avoid","Mitigate","Transfer","Accept","Escalate"].find(x=>x.toLowerCase()===(r[cResp]||"").trim().toLowerCase())||"Mitigate",
+        vel: ["Low","Medium","High"].find(x=>x.toLowerCase()===(r[cVel]||"").trim().toLowerCase())||"Medium",
+        status: ["Open","In-Progress","Closed"].find(x=>x.toLowerCase()===(r[cSt]||"").trim().toLowerCase())||"Open",
+        owner: (r[cOw]||"").trim()||"Unassigned" });
+      added++;
+    });
+    render();
+    alert(added + " risk(s) imported successfully.");
+  };
+  reader.readAsText(file);
+  ev.target.value = "";
+}
+
+previewScore();
+render();
+</script>
+</body>
+</html>
